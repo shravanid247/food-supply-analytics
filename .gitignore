@@ -52,19 +52,10 @@ yarn-error.log*
 # IDE files
 .vscode/
 
-# Data files
-*.csv
-*.zip
-ml_service/app/data/
-ml_service/models/
 .Trashes
 ehthumbs.db
 Thumbs.db
 
-# Data and Plots
-*.csv
-*.zip
-*.png
 
 # IDE and Temp
 .vscode/
