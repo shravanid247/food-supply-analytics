@@ -1,0 +1,120 @@
+openapi: 3.0.0
+info:
+  title: Food Supply Chain Disruption Analyzer API
+  version: 1.0.0
+  description: API for food supply chain analysis, predictions and risk alerts
+
+servers:
+  - url: http://localhost:5000
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+paths:
+  /api/auth/register:
+    post:
+      summary: Register a new user
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        201:
+          description: Registered successfully
+
+  /api/auth/login:
+    post:
+      summary: Login user
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        200:
+          description: Login successful
+
+  /api/auth/me:
+    get:
+      summary: Get logged in user
+      tags: [Auth]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: User data returned
+
+  /api/data/predict:
+    get:
+      summary: Get 6 month price forecast
+      tags: [Data]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Predictions returned
+
+  /api/data/predict/history:
+    get:
+      summary: Get prediction history
+      tags: [Data]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: History returned
+
+  /api/data/risk:
+    get:
+      summary: Get risk levels for all countries
+      tags: [Data]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: country
+          schema:
+            type: string
+        - in: query
+          name: commodity
+          schema:
+            type: string
+      responses:
+        200:
+          description: Risk data returned
+
+  /api/data/risk/history:
+    get:
+      summary: Get risk alert history
+      tags: [Data]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: country
+          schema:
+            type: string
+      responses:
+        200:
+          description: Risk history returned
