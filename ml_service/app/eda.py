@@ -1,5 +1,7 @@
 import os
 import pandas as pd
+import matplotlib
+matplotlib.use('Agg') # Use Agg backend for headless environments
 import matplotlib.pyplot as plt
 
 # Get the directory where this script is located

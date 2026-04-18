@@ -1,8 +1,10 @@
 import pandas as pd
 import os
 
-input_path = r"c:\Users\seema\OneDrive\Desktop\Fsdmini\ml_service\app\data\ConsumerPriceIndices_E_All_Data\ConsumerPriceIndices_E_All_Data_NOFLAG.csv"
-output_path = r"c:\Users\seema\OneDrive\Desktop\Fsdmini\ml_service\app\data\clean_consumer_price_indices.csv"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+input_path = os.path.join(BASE_DIR, "data", "ConsumerPriceIndices_E_All_Data", "ConsumerPriceIndices_E_All_Data_NOFLAG.csv")
+output_path = os.path.join(BASE_DIR, "data", "clean_consumer_price_indices.csv")
+
 
 def clean_data():
     print(f"Reading {input_path}...")

@@ -1,7 +1,9 @@
 import pandas as pd
 
-input_path = r"c:\Users\seema\Downloads\food_price_indices_data.csv"
-output_path = r"c:\Users\seema\OneDrive\Desktop\Fsdmini\ml_service\app\data\clean_food_price_indices.csv"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+input_path = os.path.join(BASE_DIR, "data", "food_price_indices_data.csv")
+output_path = os.path.join(BASE_DIR, "data", "clean_food_price_indices.csv")
+
 
 def clean_data():
     print(f"Reading {input_path}...")

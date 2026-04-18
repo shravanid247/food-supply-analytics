@@ -60,3 +60,16 @@ Thumbs.db
 # IDE and Temp
 .vscode/
 git_status.txt
+
+
+# ML Models (too large)
+*.h5
+*.keras
+
+# Raw data files (too large)
+ml_service/app/data/raw/
+*.zip
+
+# Compiled Python
+ml_service/app/__pycache__/
+ml_service/app/data/__pycache__/
