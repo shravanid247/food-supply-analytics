@@ -69,7 +69,8 @@ git_status.txt
 # Raw data files (too large)
 ml_service/app/data/raw/
 *.zip
-
+ml_service/app/data/clean_trade_matrix.csv
 # Compiled Python
 ml_service/app/__pycache__/
 ml_service/app/data/__pycache__/
+

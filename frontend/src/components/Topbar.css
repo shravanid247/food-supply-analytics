@@ -1,0 +1,141 @@
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px 16px 0;
+  width: 100%;
+}
+
+.search-container {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  flex: 1;
+  max-width: 320px;
+}
+
+.search-icon {
+  color: var(--text-secondary);
+  margin-right: 12px;
+}
+
+.search-input {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  width: 100%;
+  font-size: 1.1rem;
+  padding: 4px 0;
+}
+
+.search-input:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.filters-container {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  gap: 16px;
+}
+
+.filter-dropdown {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.filter-dropdown:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 140px;
+  z-index: 1000;
+}
+
+.dropdown-item {
+  padding: 8px 12px;
+  border-radius: 4px;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.commodity-tags {
+  display: flex;
+  gap: 8px;
+  font-size: 0.8rem;
+}
+
+.tag {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+  color: var(--text-secondary);
+}
+
+.tag:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+.tag.active {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.tag.cereals.active { color: #eab308; border-color: #eab30860; }
+.tag.oils.active { color: #60a5fa; border-color: #60a5fa60; }
+.tag.sugar.active { color: #f472b6; border-color: #f472b660; }
+.tag.dairy.active { color: #a3e635; border-color: #a3e63560; }
+.tag.meat.active { color: #f97316; border-color: #f9731660; }
+
+.settings-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 6px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.settings-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}

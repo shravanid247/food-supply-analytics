@@ -1,0 +1,434 @@
+.map-view-wrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+
+.leaflet-map-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+/* Override Leaflet styles to match theme */
+.leaflet-container {
+  background-color: var(--bg-primary) !important;
+  font-family: var(--font-family) !important;
+}
+
+.leaflet-custom-tooltip {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.custom-tooltip {
+  background: rgba(18, 24, 38, 0.9);
+  border: 1px solid var(--panel-border);
+  backdrop-filter: blur(8px);
+  padding: 12px;
+  border-radius: 8px;
+  color: white;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+.custom-tooltip strong {
+  font-size: 0.9rem;
+  color: var(--accent-cyan);
+}
+
+.risk-critical { color: var(--risk-critical); font-weight: bold; }
+.risk-high { color: var(--risk-high); font-weight: bold; }
+.risk-medium { color: var(--risk-medium); font-weight: bold; }
+.risk-low { color: var(--risk-low); font-weight: bold; }
+
+/* Left Overlays */
+.left-overlays {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  z-index: 1000;
+  pointer-events: none; /* Let clicks pass through to map where transparent */
+}
+
+.legend-block {
+  padding: 16px;
+  min-width: 160px;
+  pointer-events: auto; /* Re-enable clicks on the legend itself */
+}
+
+.legend-block h3 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.legend-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.legend-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.bg-low { background-color: var(--risk-low); box-shadow: 0 0 8px var(--risk-low); }
+.bg-medium { background-color: var(--risk-medium); box-shadow: 0 0 8px var(--risk-medium); }
+.bg-high { background-color: var(--risk-high); box-shadow: 0 0 8px var(--risk-high); }
+.bg-critical { background-color: var(--risk-critical); border: 2px solid var(--text-secondary); }
+
+/* Right Panel (now sliding) */
+.right-panel {
+  position: absolute;
+  top: 16px;
+  right: 16px; /* give it some margin from the right edge */
+  bottom: 16px;
+  width: 480px;
+  z-index: 1000;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: rgba(18, 24, 38, 0.85);
+  box-shadow: -4px 0 24px rgba(0,0,0,0.5);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.country-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.country-title h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.close-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: white;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.risk-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.badge.critical {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid var(--risk-critical);
+  color: var(--risk-critical);
+  padding: 4px 12px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 0.75rem;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+}
+
+.badge.high {
+  background: rgba(244, 63, 94, 0.15);
+  border: 1px solid var(--risk-high);
+  color: var(--risk-high);
+  padding: 4px 12px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.badge.medium {
+  background: rgba(234, 179, 8, 0.15);
+  border: 1px solid var(--risk-medium);
+  color: var(--risk-medium);
+  padding: 4px 12px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.badge.low {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid var(--risk-low);
+  color: var(--risk-low);
+  padding: 4px 12px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.commodity-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.commodity-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.commodity-tabs .tab {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--panel-border);
+  color: var(--text-secondary);
+  padding: 6px 0;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.commodity-tabs .tab:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+.commodity-tabs .tab.active {
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  background: rgba(0, 240, 255, 0.05);
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.2);
+}
+
+.charts-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+}
+
+.chart-box {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-box h4 {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.chart-wrapper {
+  flex: 1;
+  min-height: 120px;
+}
+
+.insights-section h4 {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+.insights-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.insight-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--panel-border);
+  padding: 12px;
+  border-radius: 8px;
+}
+
+/* ReactBits Spotlight Animation Effect */
+.spotlight-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.spotlight-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    400px circle at var(--mouse-x, 0) var(--mouse-y, 0),
+    rgba(0, 240, 255, 0.15),
+    transparent 40%
+  );
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: 1;
+}
+
+.spotlight-card:hover::before {
+  opacity: 1;
+}
+
+.spotlight-content {
+  position: relative;
+  z-index: 2;
+  background: inherit;
+  border-radius: inherit;
+  padding: 2px;
+}
+
+.insight-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.insight-header h5 {
+  font-size: 0.75rem;
+  color: var(--text-primary);
+}
+
+.insight-card p {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* Timeline */
+.bottom-timeline {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 16px;
+  z-index: 1000;
+}
+
+.year {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.timeline-track {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  position: relative;
+}
+
+.timeline-progress {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: var(--accent-cyan);
+  border-radius: 2px;
+  box-shadow: 0 0 10px var(--accent-cyan);
+}
+
+.timeline-node {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--risk-low);
+  box-shadow: 0 0 8px var(--risk-low);
+}
+
+.timeline-node.active {
+  background: var(--accent-cyan);
+  box-shadow: 0 0 8px var(--accent-cyan);
+}
+
+.timeline-thumb {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 0 12px white;
+  cursor: pointer;
+}
+
+.thumb-label {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 12px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  white-space: nowrap;
+}
