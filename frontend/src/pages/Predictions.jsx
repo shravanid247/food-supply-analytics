@@ -223,10 +223,20 @@ const Predictions = () => {
             />
             <YAxis stroke="var(--text-secondary)" fontSize={10} tickLine={false} axisLine={false} />
             <Tooltip contentStyle={tooltipStyle} />
-            <ReferenceLine x="2022-02" stroke="#ef4444" strokeDasharray="4 3"
-              label={{ value: 'Ukraine War', fill: '#ef4444', fontSize: 10, position: 'top' }} />
-            <ReferenceLine x="2020-03" stroke="#f97316" strokeDasharray="4 3"
-              label={{ value: 'COVID-19', fill: '#f97316', fontSize: 10, position: 'top' }} />
+            <ReferenceLine
+              x="2022-02-01"
+              stroke="#ef4444"
+              strokeDasharray="4 3"
+              strokeWidth={2}
+              label={{ value: 'Ukraine War', fill: '#ef4444', fontSize: 10, position: 'top' }}
+            />
+            <ReferenceLine
+              x="2020-03-01"
+              stroke="#f97316"
+              strokeDasharray="4 3"
+              strokeWidth={2}
+              label={{ value: 'COVID-19', fill: '#f97316', fontSize: 10, position: 'top' }}
+            />
             {COMMODITIES.map(({ key, label, color }) =>
               activeLines[key] ? (
                 <Line key={key} type="monotone" dataKey={key} name={label}
