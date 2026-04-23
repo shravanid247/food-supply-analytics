@@ -142,7 +142,7 @@ const Topbar = ({
           <input
             ref={inputRef}
             type="text"
-            placeholder="Search country or commodity..."
+            placeholder="Search country..."
             className="search-input"
             value={query}
             onChange={handleInput}

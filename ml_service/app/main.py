@@ -44,6 +44,27 @@ FOOD_PRICE_COLUMN_MAP = {
 }
 
 
+def normalize_country_name(value: str) -> str:
+    if not isinstance(value, str):
+        return value
+
+    text = value.strip()
+
+    # Fix common mojibake from latin-1/utf-8 double decoding.
+    for _ in range(2):
+        if "Ã" not in text and "Â" not in text:
+            break
+        try:
+            fixed = text.encode("latin-1", errors="ignore").decode("utf-8", errors="ignore")
+            if not fixed or fixed == text:
+                break
+            text = fixed
+        except UnicodeError:
+            break
+
+    return text
+
+
 @lru_cache(maxsize=1)
 def get_food_price_data():
     if not FOOD_PRICE_DATA_PATH.exists():
@@ -103,18 +124,20 @@ def predict():
     if food_price_df is None:
         raise HTTPException(status_code=503, detail="Missing clean_food_price_indices.csv")
 
-    required_columns = {"Date", "Food Price Index"}
+    required_columns = {"Date", "Food Price Index", "Cereals", "Oils", "Meat", "Dairy", "Sugar"}
     if not required_columns.issubset(food_price_df.columns):
         raise HTTPException(status_code=500, detail=f"Missing columns: {sorted(required_columns)}")
 
-    data = food_price_df.dropna(subset=["Date", "Food Price Index"]).copy()
+    data = food_price_df.copy()
     data["Date"] = pd.to_datetime(data["Date"], errors="coerce")
-    data["Food Price Index"] = pd.to_numeric(data["Food Price Index"], errors="coerce")
+    for col in ["Food Price Index", "Cereals", "Oils", "Meat", "Dairy", "Sugar"]:
+        data[col] = pd.to_numeric(data[col], errors="coerce")
     data = data.dropna(subset=["Date", "Food Price Index"]).sort_values("Date")
 
     if len(data) < 12:
         raise HTTPException(status_code=503, detail="Need at least 12 rows.")
 
+    # LSTM forecast on Food Price Index
     recent = data[["Food Price Index"]].tail(12).to_numpy(dtype=float)
     scaler = MinMaxScaler()
     recent_scaled = scaler.fit_transform(recent)
@@ -124,10 +147,12 @@ def predict():
     if model is not None:
         for _ in range(6):
             x_input = input_seq.reshape(1, 12, 1)
-            prediction = model.predict(x_input, verbose=0)
-            predictions_scaled.append(prediction[0][0])
-            input_seq = np.vstack([input_seq[1:], prediction.reshape(1, 1)])
-        predictions = scaler.inverse_transform(np.array(predictions_scaled).reshape(-1, 1)).flatten()
+            pred = model.predict(x_input, verbose=0)
+            predictions_scaled.append(pred[0][0])
+            input_seq = np.vstack([input_seq[1:], pred.reshape(1, 1)])
+        predictions = scaler.inverse_transform(
+            np.array(predictions_scaled).reshape(-1, 1)
+        ).flatten()
     else:
         latest_value = float(data["Food Price Index"].iloc[-1])
         predictions = np.array([latest_value] * 6, dtype=float)
@@ -135,14 +160,79 @@ def predict():
     last_date = data["Date"].iloc[-1]
     future_months = pd.date_range(start=last_date, periods=7, freq="MS")[1:]
 
+    # Per-commodity simple linear trend forecast (last 12 months slope)
+    def simple_forecast(col_name, n=6):
+        col_data = data[col_name].dropna().tail(12).values.astype(float)
+        if len(col_data) < 2:
+            return [float(col_data[-1])] * n
+        slope = (col_data[-1] - col_data[0]) / len(col_data)
+        last_val = col_data[-1]
+        return [round(last_val + slope * (i + 1), 2) for i in range(n)]
+
+    cereals_pred = simple_forecast("Cereals")
+    oils_pred = simple_forecast("Oils")
+    meat_pred = simple_forecast("Meat")
+    dairy_pred = simple_forecast("Dairy")
+    sugar_pred = simple_forecast("Sugar")
+
+    # Historical — last 36 months
+    hist = data.tail(36).copy()
+    historical = []
+    for _, row in hist.iterrows():
+        historical.append({
+            "date": str(row["Date"].date()),
+            "food_price_index": round(float(row["Food Price Index"]), 2) if pd.notna(row["Food Price Index"]) else None,
+            "cereals": round(float(row["Cereals"]), 2) if pd.notna(row["Cereals"]) else None,
+            "oils": round(float(row["Oils"]), 2) if pd.notna(row["Oils"]) else None,
+            "meat": round(float(row["Meat"]), 2) if pd.notna(row["Meat"]) else None,
+            "dairy": round(float(row["Dairy"]), 2) if pd.notna(row["Dairy"]) else None,
+            "sugar": round(float(row["Sugar"]), 2) if pd.notna(row["Sugar"]) else None,
+        })
+
     return {
         "status": "success",
         "model_used": model is not None,
-        "current_price": round(float(data["Food Price Index"].iloc[-1]), 2),
+        "current_prices": {
+            "food_price_index": round(float(data["Food Price Index"].iloc[-1]), 2),
+            "cereals": round(float(data["Cereals"].iloc[-1]), 2),
+            "oils": round(float(data["Oils"].iloc[-1]), 2),
+            "meat": round(float(data["Meat"].iloc[-1]), 2),
+            "dairy": round(float(data["Dairy"].iloc[-1]), 2),
+            "sugar": round(float(data["Sugar"].iloc[-1]), 2),
+        },
+        "prev_prices": {
+            "food_price_index": round(float(data["Food Price Index"].iloc[-2]), 2),
+            "cereals": round(float(data["Cereals"].iloc[-2]), 2),
+            "oils": round(float(data["Oils"].iloc[-2]), 2),
+            "meat": round(float(data["Meat"].iloc[-2]), 2),
+            "dairy": round(float(data["Dairy"].iloc[-2]), 2),
+            "sugar": round(float(data["Sugar"].iloc[-2]), 2),
+        },
         "predictions": [
-            {"month": str(month.date()), "predicted_price": round(float(price), 2)}
-            for month, price in zip(future_months, predictions)
+            {
+                "month": str(month.date()),
+                "food_price_index": round(float(price), 2),
+                "food_price_index_upper": round(float(price) * 1.05, 2),
+                "food_price_index_lower": round(float(price) * 0.95, 2),
+                "cereals": cereals_pred[i],
+                "cereals_upper": round(cereals_pred[i] * 1.05, 2),
+                "cereals_lower": round(cereals_pred[i] * 0.95, 2),
+                "oils": oils_pred[i],
+                "oils_upper": round(oils_pred[i] * 1.05, 2),
+                "oils_lower": round(oils_pred[i] * 0.95, 2),
+                "meat": meat_pred[i],
+                "meat_upper": round(meat_pred[i] * 1.05, 2),
+                "meat_lower": round(meat_pred[i] * 0.95, 2),
+                "dairy": dairy_pred[i],
+                "dairy_upper": round(dairy_pred[i] * 1.05, 2),
+                "dairy_lower": round(dairy_pred[i] * 0.95, 2),
+                "sugar": sugar_pred[i],
+                "sugar_upper": round(sugar_pred[i] * 1.05, 2),
+                "sugar_lower": round(sugar_pred[i] * 0.95, 2),
+            }
+            for i, (month, price) in enumerate(zip(future_months, predictions))
         ],
+        "historical": historical,
     }
 
 
@@ -190,6 +280,9 @@ def risk(year: int = None):
     result = df_year[["Area", "Value", "risk_level"]].rename(
         columns={"Area": "country", "Value": "cpi_value"}
     ).to_dict(orient="records")
+
+    for row in result:
+        row["country"] = normalize_country_name(row["country"])
 
     return {
         "status": "success",
@@ -249,30 +342,24 @@ def trade(country: str = Query(...), commodity: str = Query(default="Cereals")):
     df = trade_df[trade_df["Item"].isin(items)].copy()
     df["Value"] = pd.to_numeric(df["Value"], errors="coerce").fillna(0)
 
-    # Imports — country is the Reporter, partner is the source
     imports_df = df[
         (df["Reporter Country"] == country) &
         (df["Element"].str.contains("Import", case=False))
     ]
     imports = (
         imports_df.groupby("Partner Country")["Value"]
-        .sum()
-        .reset_index()
-        .sort_values("Value", ascending=False)
-        .head(5)
+        .sum().reset_index()
+        .sort_values("Value", ascending=False).head(5)
     )
 
-    # Exports — country is the Reporter, partner is the destination
     exports_df = df[
         (df["Reporter Country"] == country) &
         (df["Element"].str.contains("Export", case=False))
     ]
     exports = (
         exports_df.groupby("Partner Country")["Value"]
-        .sum()
-        .reset_index()
-        .sort_values("Value", ascending=False)
-        .head(5)
+        .sum().reset_index()
+        .sort_values("Value", ascending=False).head(5)
     )
 
     return {

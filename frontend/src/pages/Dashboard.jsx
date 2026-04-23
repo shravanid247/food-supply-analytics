@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   AreaChart,
   Area,
@@ -30,7 +30,7 @@ const tooltipStyle = {
   fontSize: "12px",
 };
 
-const Dashboard = ({ selectedYear, setSelectedYear, searchedCountry }) => {
+const Dashboard = ({ selectedYear, setSelectedYear }) => {
   const { isAuthenticated } = useAuth();
   const [prediction, setPrediction] = useState(null);
   const [riskData, setRiskData] = useState(null);
@@ -40,21 +40,6 @@ const Dashboard = ({ selectedYear, setSelectedYear, searchedCountry }) => {
 
   const [highlightedCountry, setHighlightedCountry] = useState(null);
 
-  // Sync with search from Topbar
-  useEffect(() => {
-    if (!searchedCountry) return;
-    const found = (riskData?.risk_data || []).find(
-      (c) => c.country === searchedCountry,
-    );
-    setHighlightedCountry(
-      found || {
-        country: searchedCountry,
-        risk_level: "NO DATA",
-        cpi_value: null,
-      },
-    );
-  }, [searchedCountry, riskData]);
-
   useEffect(() => {
     getPrediction()
       .then(setPrediction)
@@ -63,34 +48,46 @@ const Dashboard = ({ selectedYear, setSelectedYear, searchedCountry }) => {
 
   useEffect(() => {
     let isMounted = true;
-    setRiskLoading(true);
-    getRisk("")
-      .then((risk) => {
+    const loadInitialRisk = async () => {
+      setRiskLoading(true);
+      try {
+        const risk = await getRisk("");
         if (!isMounted) return;
         setRiskData(risk);
-        const years = Array.isArray(risk?.timeline_labels)
-          ? risk.timeline_labels.map(String)
+
+        const validYears = Array.isArray(risk?.timeline_labels)
+          ? [...new Set(risk.timeline_labels.map(String).filter(Boolean))]
+              .filter((y) => Number(y) >= 2018 && Number(y) <= 2025)
+              .sort((a, b) => Number(a) - Number(b))
           : [];
-        setAvailableYears(years);
-        if (!selectedYear && years.length) {
-          setSelectedYear(
-            String(risk.selected_year || years[years.length - 1]),
-          );
+        setAvailableYears(validYears);
+
+        const backendSelectedYear = risk?.selected_year ? String(risk.selected_year) : "";
+        const nextYear = validYears.includes(String(selectedYear))
+          ? String(selectedYear)
+          : validYears.includes(backendSelectedYear)
+            ? backendSelectedYear
+            : validYears[validYears.length - 1];
+
+        if (nextYear && nextYear !== selectedYear) {
+          setSelectedYear(nextYear);
         }
-      })
-      .finally(() => {
+      } finally {
         if (isMounted) {
           setLoading(false);
           setRiskLoading(false);
         }
-      });
+      }
+    };
+
+    loadInitialRisk();
     return () => {
       isMounted = false;
     };
   }, []);
 
   useEffect(() => {
-    if (!selectedYear) return;
+    if (!selectedYear || !availableYears.includes(String(selectedYear))) return;
     let isMounted = true;
     setRiskLoading(true);
     getRisk(selectedYear)
@@ -103,23 +100,40 @@ const Dashboard = ({ selectedYear, setSelectedYear, searchedCountry }) => {
     return () => {
       isMounted = false;
     };
-  }, [selectedYear]);
+  }, [selectedYear, availableYears]);
+
+  const riskRows = riskData?.risk_data || [];
+
+  const riskByCountry = useMemo(() => {
+    const map = {};
+    for (const row of riskRows) {
+      map[row.country] = row;
+    }
+    return map;
+  }, [riskRows]);
 
   const forecastData =
     prediction?.predictions?.map((p) => ({
       name: p.month?.slice(0, 7),
-      price: p.predicted_price,
+      price: p.food_price_index ?? p.predicted_price,
     })) || [];
 
-  const riskCounts = (riskData?.risk_data || []).reduce((acc, c) => {
+  const cpiValues = riskRows
+    .map((c) => Number(c.cpi_value))
+    .filter((v) => Number.isFinite(v));
+  const avgCpi = cpiValues.length
+    ? (cpiValues.reduce((sum, v) => sum + v, 0) / cpiValues.length).toFixed(1)
+    : "—";
+
+  const riskCounts = riskRows.reduce((acc, c) => {
     acc[c.risk_level] = (acc[c.risk_level] || 0) + 1;
     return acc;
   }, {});
 
-  const top5 = [...(riskData?.risk_data || [])]
+  const top5 = [...riskRows]
     .sort((a, b) => b.cpi_value - a.cpi_value)
     .slice(0, 5);
-  const recentAlerts = (riskData?.risk_data || [])
+  const recentAlerts = riskRows
     .filter((c) => ["CRITICAL", "HIGH"].includes(c.risk_level))
     .slice(0, 4);
   const anomalies = forecastData
@@ -136,10 +150,10 @@ const Dashboard = ({ selectedYear, setSelectedYear, searchedCountry }) => {
     },
     {
       label: "Avg Food Price Index",
-      value: prediction?.current_price || "—",
+      value: avgCpi,
       icon: TrendingUp,
       color: "#10b981",
-      sub: "current index",
+      sub: `${selectedYear || "selected"} average CPI`,
     },
     {
       label: "Countries Monitored",
@@ -319,9 +333,7 @@ const Dashboard = ({ selectedYear, setSelectedYear, searchedCountry }) => {
               <Geographies geography={geoUrl}>
                 {({ geographies }) =>
                   geographies.map((geo) => {
-                    const country = (riskData?.risk_data || []).find(
-                      (c) => c.country === geo.properties.name,
-                    );
+                    const country = riskByCountry[geo.properties.name];
                     const isHighlighted =
                       highlightedCountry?.country === geo.properties.name;
                     return (
@@ -345,9 +357,7 @@ const Dashboard = ({ selectedYear, setSelectedYear, searchedCountry }) => {
                           pressed: { outline: "none" },
                         }}
                         onClick={() => {
-                          const found = (riskData?.risk_data || []).find(
-                            (c) => c.country === geo.properties.name,
-                          );
+                          const found = riskByCountry[geo.properties.name];
                           setHighlightedCountry(
                             found || {
                               country: geo.properties.name,
@@ -484,17 +494,18 @@ const Dashboard = ({ selectedYear, setSelectedYear, searchedCountry }) => {
                     tickLine={false}
                     axisLine={false}
                   />
-                  <YAxis
+                 <YAxis
                     stroke="var(--text-secondary)"
                     fontSize={10}
                     tickLine={false}
                     axisLine={false}
-                  />
+                    domain={['auto', 'auto']}
+/>
                   <Tooltip contentStyle={tooltipStyle} />
                   <Area
                     type="monotone"
                     dataKey="price"
-                    name="Predicted Price"
+                    name="Food Price Index (LSTM Forecast)"
                     stroke="#10b981"
                     fill="rgba(16,185,129,0.15)"
                     strokeWidth={2}

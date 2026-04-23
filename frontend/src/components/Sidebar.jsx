@@ -13,7 +13,7 @@ const Sidebar = () => {
     { path: '/map', label: 'Supply Chain Map', icon: Map },
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/alerts', label: 'Risk Alerts', icon: Bell },
-    { path: '/history', label: 'Predictions', icon: TrendingUp },
+    { path: '/predictions', label: 'Predictions', icon: TrendingUp },
     ...(isAuthenticated ? [
       { path: '/history', label: 'My History', icon: History },
       { path: '/admin', label: 'Admin Panel', icon: Settings },

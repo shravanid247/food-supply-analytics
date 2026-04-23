@@ -8,14 +8,33 @@ const AdminPanel = () => {
   const [thresholds, setThresholds] = useState({ critical: 300, high: 150, medium: 110 });
   const [saved, setSaved] = useState(false);
 
-  const criticalCount = (riskData?.risk_data || []).filter(c => c.risk_level === 'CRITICAL').length;
-  const highCount = (riskData?.risk_data || []).filter(c => c.risk_level === 'HIGH').length;
+  const getRiskLevel = (cpi) => {
+    if (cpi > thresholds.critical) return 'CRITICAL';
+    if (cpi > thresholds.high) return 'HIGH';
+    if (cpi > thresholds.medium) return 'MEDIUM';
+    return 'LOW';
+  };
+
+  const reclassified = (riskData?.risk_data || []).map(item => ({
+    ...item,
+    risk_level: getRiskLevel(item.cpi_value),
+  }));
+
+  const criticalCount = reclassified.filter(c => c.risk_level === 'CRITICAL').length;
+  const highCount = reclassified.filter(c => c.risk_level === 'HIGH').length;
   const totalCountries = riskData?.total_countries || 0;
 
   const handleSave = async () => {
     await updateRiskThresholds(thresholds);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  };
+
+  const riskColorMap = {
+    CRITICAL: { color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+    HIGH: { color: '#f43f5e', bg: 'rgba(244,63,94,0.1)' },
+    MEDIUM: { color: '#eab308', bg: 'rgba(234,179,8,0.1)' },
+    LOW: { color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
   };
 
   return (
@@ -44,7 +63,7 @@ const AdminPanel = () => {
       <div className="glass-panel" style={{ padding: '24px' }}>
         <h3 style={{ fontSize: '0.95rem', marginBottom: '20px', fontWeight: 600 }}>Configure Risk Thresholds</h3>
         <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '20px' }}>
-          Set CPI value thresholds for risk classification. Countries with CPI above these values are classified accordingly.
+          Drag sliders to reclassify countries in real time. Click Save to persist.
         </p>
 
         {[
@@ -54,19 +73,25 @@ const AdminPanel = () => {
         ].map(({ key, label, color }) => (
           <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
             <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: color, flexShrink: 0 }} />
-            <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', width: '220px' }}>{label} {thresholds[key]})</label>
-            <input type="range" min="50" max="500" step="10"
+            <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', width: '220px' }}>
+              {label} {thresholds[key]})
+            </label>
+            <input
+              type="range" min="50" max="500" step="10"
               value={thresholds[key]}
               onChange={e => setThresholds({ ...thresholds, [key]: Number(e.target.value) })}
               style={{ flex: 1 }}
             />
-            <span style={{ fontSize: '0.9rem', fontWeight: 600, color, width: '40px', textAlign: 'right' }}>{thresholds[key]}</span>
+            <span style={{ fontSize: '0.9rem', fontWeight: 600, color, width: '40px', textAlign: 'right' }}>
+              {thresholds[key]}
+            </span>
           </div>
         ))}
 
         <button onClick={handleSave} style={{
           display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px',
-          padding: '10px 24px', background: saved ? 'rgba(16,185,129,0.1)' : 'rgba(0,240,255,0.1)',
+          padding: '10px 24px',
+          background: saved ? 'rgba(16,185,129,0.1)' : 'rgba(0,240,255,0.1)',
           border: `1px solid ${saved ? '#10b981' : 'var(--accent-cyan)'}`,
           color: saved ? '#10b981' : 'var(--accent-cyan)',
           borderRadius: '8px', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.9rem', fontWeight: 600
@@ -77,7 +102,12 @@ const AdminPanel = () => {
       </div>
 
       <div className="glass-panel" style={{ padding: '24px' }}>
-        <h3 style={{ fontSize: '0.95rem', marginBottom: '16px', fontWeight: 600 }}>Detailed Analytics</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <h3 style={{ fontSize: '0.95rem', fontWeight: 600 }}>Detailed Analytics</h3>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+            Showing {reclassified.filter(c => ['CRITICAL', 'HIGH'].includes(c.risk_level)).length} high risk countries
+          </p>
+        </div>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--panel-border)' }}>
@@ -87,19 +117,29 @@ const AdminPanel = () => {
             </tr>
           </thead>
           <tbody>
-            {(riskData?.risk_data || []).filter(c => ['CRITICAL', 'HIGH'].includes(c.risk_level)).map((item, i) => (
-              <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                <td style={{ padding: '10px 16px', fontSize: '0.85rem' }}>{item.country}</td>
-                <td style={{ padding: '10px 16px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{item.cpi_value?.toFixed(2)}</td>
-                <td style={{ padding: '10px 16px' }}>
-                  <span style={{
-                    padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600,
-                    color: item.risk_level === 'CRITICAL' ? '#ef4444' : '#f43f5e',
-                    background: item.risk_level === 'CRITICAL' ? 'rgba(239,68,68,0.1)' : 'rgba(244,63,94,0.1)',
-                  }}>{item.risk_level}</span>
-                </td>
-              </tr>
-            ))}
+            {reclassified
+              .filter(c => ['CRITICAL', 'HIGH'].includes(c.risk_level))
+              .sort((a, b) => b.cpi_value - a.cpi_value)
+              .map((item, i) => (
+                <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  <td style={{ padding: '10px 16px', fontSize: '0.85rem' }}>{item.country}</td>
+                  <td style={{ padding: '10px 16px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                    {item.cpi_value?.toFixed(2)}
+                  </td>
+                  <td style={{ padding: '10px 16px' }}>
+                    <span style={{
+                      padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600,
+                      color: riskColorMap[item.risk_level]?.color,
+                      background: riskColorMap[item.risk_level]?.bg,
+                    }}>
+                      {item.risk_level}
+                    </span>
+                  </td>
+                </tr>
+              ))}
           </tbody>
         </table>
       </div>

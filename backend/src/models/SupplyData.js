@@ -4,10 +4,24 @@ const PredictionLogSchema = new mongoose.Schema({
   user_id: { type: String, required: true },
   requested_at: { type: Date, default: Date.now },
   current_price: { type: Number },
+  current_prices: {
+    food_price_index: Number,
+    cereals: Number,
+    oils: Number,
+    meat: Number,
+    dairy: Number,
+    sugar: Number,
+  },
   predictions: [
     {
       month: String,
       predicted_price: Number,
+      food_price_index: Number,
+      cereals: Number,
+      oils: Number,
+      meat: Number,
+      dairy: Number,
+      sugar: Number,
     },
   ],
 });
