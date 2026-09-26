@@ -50,26 +50,6 @@ The split is intentional: relational data handles identity and constraints, docu
 
 ## Request Flows
 
-### Authenticated dashboard flow
-
-```mermaid
-sequenceDiagram
-	participant U as Browser
-	participant E as Express
-	participant P as PostgreSQL
-	participant M as FastAPI
-	participant A as MongoDB
-	U->>E: POST /api/auth/login
-	E->>P: Find user by email
-	P-->>E: Password hash and role
-	E-->>U: JWT token
-	U->>E: GET /api/data/risk with Bearer token
-	E->>M: GET /risk?year=...
-	M-->>E: Country CPI and risk levels
-	E->>A: Save risk snapshot/logs
-	E-->>U: Dashboard-ready JSON
-```
-
 ### Map and trade flow
 
 1. The browser loads country boundaries from GeoJSON and map tiles from OpenStreetMap.
@@ -199,28 +179,6 @@ The map, dashboard, alerts, and predictions require login because their Express 
 - The frontend uses explicit `127.0.0.1` service URLs for reliable Windows local development.
 - The map uses key-free OpenStreetMap tiles and GeoJSON boundaries; no Google Maps or Mapbox key is required.
 
-## Why We Did Not Host Everything on a Tiny/Small Tier
-
-This is not a good fit for one minimal shared hosting process. The constraint is architectural, not cosmetic:
-
-1. **TensorFlow startup cost:** importing TensorFlow and loading the LSTM model consumes substantially more memory and CPU than a static frontend or a small Node API.
-2. **Large analytical files:** the trade matrix is roughly 182 MB locally, and pandas needs additional working memory while loading, filtering, and aggregating it.
-3. **Cold starts hurt the demo:** a sleeping ML container makes the first forecast request slow, which looks like a broken dashboard during a live presentation.
-4. **Three independent runtimes:** React/Vite, Node/Express, and Python/FastAPI have different buildpacks, process lifecycles, and dependency footprints.
-5. **Two external databases:** PostgreSQL and MongoDB Atlas need stable credentials, network access, and connection handling; a tiny ephemeral host adds another failure surface.
-6. **Ephemeral storage is unsafe for model/data assets:** redeploys can remove local files unless the datasets and model are packaged or stored in durable object storage.
-7. **Resource contention:** running TensorFlow inference, pandas work, Node requests, and a frontend server on one small instance creates unpredictable latency.
-
-### Sensible deployment shape
-
-- Host the compiled React frontend as static assets on a CDN or static host.
-- Run Express as a small always-on API service.
-- Run FastAPI as a memory-aware service with the model packaged in the image or mounted from durable storage.
-- Keep PostgreSQL and MongoDB as managed databases.
-- Move the trade matrix to object storage or a database-backed analytical layer when traffic grows.
-
-For local development, execution is reliable because all datasets are present, the model has no cold-start download, and database connections are easy to observe. For production, the services should be deployed separately with health checks, secrets management, persistent storage, and resource limits.
-
 ## Current Limitations and Next Steps
 
 - Add automated backend and ML integration tests.
@@ -254,6 +212,3 @@ ml_service/
 	models/                   Trained LSTM model
 ```
 
-## License and Data Provenance
-
-Add the applicable dataset licenses and source citations before public deployment. This repository intentionally keeps data processing code close to the source files so provenance and cleaning decisions can be reviewed during judging or handoff.
