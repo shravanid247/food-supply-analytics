@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import { TrendingUp, TrendingDown, AlertTriangle, AlertCircle } from 'lucide-react';
 
-const ML_URL = 'http://localhost:8000';
+const ML_URL = 'http://127.0.0.1:8000';
 
 const COMMODITIES = [
   { key: 'food_price_index', label: 'Food Index', color: '#00f0ff' },

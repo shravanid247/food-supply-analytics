@@ -109,7 +109,7 @@ For the selected year, the latest valid CPI observation per country is classifie
 | `GET` | `/api/data/predict/history` | JWT |
 | `GET` | `/api/data/risk` | JWT |
 | `GET` | `/api/data/risk/history` | JWT |
-| `POST` | `/api/data/thresholds` | JWT/admin flow |
+| `POST` | `/api/data/thresholds` | JWT; stored in process memory |
 | `GET` | `/api/docs` | Swagger UI |
 
 ## Run Locally
@@ -176,7 +176,7 @@ The map, dashboard, alerts, and predictions require login because their Express 
 - Helmet, CORS, compression, JSON parsing, and API rate limiting are enabled in Express.
 - Secrets belong in `backend/.env`; never commit real database passwords or JWT secrets.
 - Authenticated pages redirect to login instead of rendering misleading empty data.
-- The frontend uses explicit `127.0.0.1` service URLs for reliable Windows local development.
+- Frontend service calls use explicit `127.0.0.1` URLs for reliable Windows local development.
 - The map uses key-free OpenStreetMap tiles and GeoJSON boundaries; no Google Maps or Mapbox key is required.
 
 ## Current Limitations and Next Steps
