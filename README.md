@@ -68,6 +68,7 @@ sequenceDiagram
 	M-->>E: Country CPI and risk levels
 	E->>A: Save risk snapshot/logs
 	E-->>U: Dashboard-ready JSON
+```
 
 ### Map and trade flow
 
