@@ -15,12 +15,17 @@ const Login = () => {
     setError('');
     if (!form.email || !form.password) { setError('Please fill all fields'); return; }
     setLoading(true);
-    const result = isLogin
-      ? await login(form.email, form.password)
-      : await register(form.name, form.email, form.password);
-    setLoading(false);
-    if (result.success) navigate('/dashboard');
-    else setError(result.message || 'Something went wrong');
+    try {
+      const result = isLogin
+        ? await login(form.email, form.password)
+        : await register(form.name, form.email, form.password);
+      if (result.success) navigate('/dashboard');
+      else setError(result.message || 'Something went wrong');
+    } catch (err) {
+      setError('Unable to reach the backend. Check that it is running on port 5000.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

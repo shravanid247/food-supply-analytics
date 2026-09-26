@@ -1,5 +1,5 @@
-const EXPRESS_URL = 'http://localhost:5000';
-const ML_URL = 'http://localhost:8000';
+const EXPRESS_URL = 'http://127.0.0.1:5000';
+const ML_URL = 'http://127.0.0.1:8000';
 
 const getToken = () => localStorage.getItem('token');
 

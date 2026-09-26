@@ -50,10 +50,10 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />} />
-      <Route path="/dashboard" element={<Layout showTopbar={false}><Dashboard selectedYear={selectedYear} setSelectedYear={setSelectedYear} /></Layout>} />
-      <Route path="/map" element={<Layout showTopbar={true}><MapView selectedYear={selectedYear} setSelectedYear={setSelectedYear} selectedCommodity={selectedCommodity} searchedCountry={searchedCountry} /></Layout>} />
-      <Route path="/alerts" element={<Layout showTopbar={false}><RiskAlerts /></Layout>} />
-      <Route path="/predictions" element={<Layout showTopbar={false}><Predictions /></Layout>} />
+      <Route path="/dashboard" element={<ProtectedRoute><Layout showTopbar={false}><Dashboard selectedYear={selectedYear} setSelectedYear={setSelectedYear} /></Layout></ProtectedRoute>} />
+      <Route path="/map" element={<ProtectedRoute><Layout showTopbar={true}><MapView selectedYear={selectedYear} setSelectedYear={setSelectedYear} selectedCommodity={selectedCommodity} searchedCountry={searchedCountry} /></Layout></ProtectedRoute>} />
+      <Route path="/alerts" element={<ProtectedRoute><Layout showTopbar={false}><RiskAlerts /></Layout></ProtectedRoute>} />
+      <Route path="/predictions" element={<ProtectedRoute><Layout showTopbar={false}><Predictions /></Layout></ProtectedRoute>} />
       <Route path="/history" element={<Layout showTopbar={false}><ProtectedRoute><PredictionHistory /></ProtectedRoute></Layout>} />
       <Route path="/admin" element={<Layout showTopbar={false}><ProtectedRoute><AdminPanel /></ProtectedRoute></Layout>} />
       <Route path="*" element={<Navigate to="/" />} />
